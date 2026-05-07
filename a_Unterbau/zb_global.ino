@@ -1,4 +1,5 @@
 // GLOBAL
+Preferences prefs;
 OneWire oneWire(PIN_OIL_TEMP);
 DallasTemperature ds18b20(&oneWire);
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);

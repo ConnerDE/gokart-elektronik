@@ -1,11 +1,4 @@
-
 /* ==================== DRS ==================== */
-
-enum DRSState {
-  DRS_Disabled,
-  DRS_Armed,
-  DRS_Active
-};
 
 static DRSState drsState = DRS_Disabled;
 
@@ -17,16 +10,13 @@ static unsigned long lastActivation = 0;
 static bool lastAllowed = false;
 
 // Init 
-
 void drsInit() {
   drsState = DRS_Disabled;
   lastActivation = 0;
 }
 
 // Hauptlogik
-
 void drsUpdate(float speed, int throttle, bool braking, int rpm, bool systemOK, float oilTemp, float voltage) {
-
   bool allowed = drsAllowed(speed, throttle, rpm, braking, systemOK, oilTemp, voltage);
   lastAllowed = allowed;
 
@@ -44,7 +34,6 @@ void drsUpdate(float speed, int throttle, bool braking, int rpm, bool systemOK, 
 }
 
 // Button-Handler 
-
 void drsButtonPressed() {
   if (drsState == DRS_Armed) {
     drsState = DRS_Active;
@@ -53,14 +42,12 @@ void drsButtonPressed() {
 }
 
 // Getter 
-
 DRSState getDRSState() { return drsState; }
 bool isDRSActive()     { return drsState == DRS_Active; }
 bool isDRSArmed()      { return drsState == DRS_Armed; }
 bool isDRSAllowed()    { return lastAllowed; }
 
 // Setter
-
 void setDRS(bool active) {
   drsState = active ? DRS_Active : DRS_Disabled;
 }
