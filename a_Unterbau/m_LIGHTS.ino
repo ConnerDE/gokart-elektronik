@@ -89,6 +89,47 @@ public:
     }
   }
 
+  void updateCorneringLight(CRGB* ledsVL, CRGB* ledsVR, uint16_t count,
+                            int8_t steerPercent, uint8_t rawVL, uint8_t rawVR) {
+    if (steerPercent == 0) return;
+
+    float vVL = (float)rawVL / 10.0f;
+    float vVR = (float)rawVR / 10.0f;
+    float diff = vVL - vVR;
+    if (fabsf(diff) < 0.05f) return;
+
+    int steerMag = abs(steerPercent);
+    uint8_t intensity = map(steerMag, 5, 100, 40, 255);
+    uint8_t spread = map(steerMag, 5, 100, 4, count / 3);
+    spread = constrain(spread, 4, count / 2);
+
+    CRGB* target = nullptr;
+    bool fromOutside = false;
+
+    if (steerPercent < 0 && diff > 0) {
+      target = ledsVL;
+      fromOutside = true;
+    } else if (steerPercent > 0 && diff < 0) {
+      target = ledsVR;
+      fromOutside = false;
+    } else if (steerPercent < 0) {
+      target = ledsVL;
+      fromOutside = true;
+    } else {
+      target = ledsVR;
+      fromOutside = false;
+    }
+
+    if (!target) return;
+
+    CRGB cornerColor = CRGB(180, 200, 255);
+    for (uint8_t i = 0; i < spread && i < count; i++) {
+      uint16_t idx = fromOutside ? i : (count - 1 - i);
+      uint8_t fade = 255 - (uint8_t)((i * 220) / spread);
+      target[idx] = cornerColor.nscale8((fade * intensity) / 255);
+    }
+  }
+
   void updateDynamicBlinker(CRGB* leds, uint16_t count, bool active, bool left) {
     if (!active) {
       fill_solid(leds, count, CRGB::Black);
@@ -181,6 +222,11 @@ public:
         if (effectiveRgbMode != 255) {
           applyRGBEffect(ledsFrontVL, NUM_FRONT_LEDS, effectiveRgbMode, can.driveMode);
           applyRGBEffect(ledsFrontVR, NUM_FRONT_LEDS, effectiveRgbMode, can.driveMode);
+        }
+        if (can.chassisDataValid) {
+          extern SteeringInput steering;
+          updateCorneringLight(ledsFrontVL, ledsFrontVR, NUM_FRONT_LEDS,
+                               steering.getSteerPercent(), can.rawSpeedVL, can.rawSpeedVR);
         }
       }
     }

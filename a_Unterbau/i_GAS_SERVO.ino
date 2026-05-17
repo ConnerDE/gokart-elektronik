@@ -1,18 +1,20 @@
 /* ==================== GAS PEDAL & SERVO ==================== */
-
-// Zugriff auf das globale Safety-Objekt ermöglichen
-class SafetyModule; 
-extern SafetyModule safety;
-
 class GasPedal {
   int32_t encoderPos = 0;
   uint8_t lastEncState = 0;
   uint8_t currentGasPercent = 0;
+  uint8_t asrCutPercent = 0;
 
-  // Lernmodus-Variablen
   bool calibrating = false;
   int32_t calLearnMin = GAS_MAX_STEPS_RAW;
   int32_t calLearnMax = 0;
+
+  void writeServoAngle(int targetAngle) {
+    uint32_t pulseWidth_us = map(targetAngle, 0, 180, 1000, 2000);
+    uint32_t duty = (uint32_t)((pulseWidth_us * (uint64_t)LEDC_SERVO_DUTY_MAX) / 20000ULL);
+    ledc_set_duty(LEDC_SERVO_MODE, LEDC_SERVO_GAS_CH, duty);
+    ledc_update_duty(LEDC_SERVO_MODE, LEDC_SERVO_GAS_CH);
+  }
 
 public:
   void begin() {
@@ -39,10 +41,7 @@ public:
   }
 
   void cutThrottle() {
-    uint32_t pulseWidth_us = map(calSrvGasMin, 0, 180, 1000, 2000);
-    uint32_t duty = (uint32_t)((pulseWidth_us * (uint64_t)LEDC_SERVO_DUTY_MAX) / 20000ULL);
-    ledc_set_duty(LEDC_SERVO_MODE, LEDC_SERVO_GAS_CH, duty);
-    ledc_update_duty(LEDC_SERVO_MODE, LEDC_SERVO_GAS_CH);
+    writeServoAngle(calSrvGasMin);
   }
 
   void updateCalibration() {
@@ -77,7 +76,10 @@ public:
 
   bool isCalibrating() { return calibrating; }
 
-  void update(uint8_t driveMode, bool launchActive, uint16_t currentRPM, bool neutralActive) {
+  void update(uint8_t driveMode, bool launchActive, uint16_t currentRPM, bool neutralActive,
+              bool asrActive, bool driftMode, uint8_t vRefKmh, int8_t steerPercent) {
+    (void)neutralActive;
+
     bool a = mcp1.digitalRead(MCP1_PEDAL_ENC_A);
     bool b = mcp1.digitalRead(MCP1_PEDAL_ENC_B);
     uint8_t state = (a << 1) | b;
@@ -105,27 +107,36 @@ public:
       case 3: outputNorm = constrain(inputNorm * 1.2, 0.0, 1.0); break;
     }
 
-    int targetAngle = outputNorm * (calSrvGasMax - calSrvGasMin) + calSrvGasMin;
+    if (driftMode) {
+      outputNorm = constrain(inputNorm * 1.15f, 0.0f, 1.0f);
+    }
+
+    int targetAngle = (int)(outputNorm * (calSrvGasMax - calSrvGasMin) + calSrvGasMin);
 
     if (launchActive && currentRPM > 2100) {
       targetAngle = calSrvGasMin;
     }
 
-    // Zugriff auf Safety-Modul für RPM Limit
-    // Hier lag der Fehler: safety muss vollständig bekannt sein oder per Pointer/Methode gelöst werden
-    // Wir nutzen hier den direkten Zugriff, da safety in j_ definiert wird.
-    extern bool getNeutralState(); // Alternative falls Fehler bleibt
-    
-    uint16_t rpmLimit = 4100;
-    // Da safety erst in j_ definiert wird, nutzen wir hier einen Workaround für den Compiler:
-    if (currentRPM >= (neutralActive ? 4500 : 4100)) {
-       targetAngle = calSrvGasMin;
+    if (asrActive) {
+      if (asrCutPercent < 95) asrCutPercent += driftMode ? 1 : 3;
+    } else if (asrCutPercent > 0) {
+      asrCutPercent = (asrCutPercent > 8) ? asrCutPercent - 8 : 0;
     }
 
-    uint32_t pulseWidth_us = map(targetAngle, 0, 180, 1000, 2000);
-    uint32_t duty = (uint32_t)((pulseWidth_us * (uint64_t)LEDC_SERVO_DUTY_MAX) / 20000ULL);
-    ledc_set_duty(LEDC_SERVO_MODE, LEDC_SERVO_GAS_CH, duty);
-    ledc_update_duty(LEDC_SERVO_MODE, LEDC_SERVO_GAS_CH);
+    if (asrCutPercent > 0) {
+      int span = calSrvGasMax - calSrvGasMin;
+      int cut = (span * asrCutPercent) / 100;
+      targetAngle = max(calSrvGasMin, targetAngle - cut);
+    }
+
+    if ((float)vRefKmh > ROLLOVER_SPEED_KMH && abs(steerPercent) > ROLLOVER_STEER_PCT) {
+      int steerMag = abs(steerPercent);
+      int maxGasPct = map(steerMag, ROLLOVER_STEER_PCT, 100, 70, 25);
+      int maxAngle = calSrvGasMin + (calSrvGasMax - calSrvGasMin) * maxGasPct / 100;
+      if (targetAngle > maxAngle) targetAngle = maxAngle;
+    }
+
+    writeServoAngle(targetAngle);
   }
 
   uint8_t getGasPercent() { return currentGasPercent; }

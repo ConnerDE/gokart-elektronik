@@ -59,6 +59,12 @@ void sendTelemetry(SafetyModule& safety, CanReceiver& can, GasPedal& gas, int8_t
 
   JsonDocument doc;
   doc["gear"] = gear;
+  if (can.chassisDataValid) {
+    doc["vRef"] = can.vRefKmh;
+    doc["vDrv"] = can.vDriveKmh;
+    doc["asr"] = can.asrActive;
+    doc["drift"] = can.driftMode;
+  }
   doc["rpm"] = safety.currentRPM;
   doc["bat"] = safety.batteryVoltage;
   doc["oil"] = safety.oilTemp;

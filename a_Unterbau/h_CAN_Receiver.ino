@@ -2,6 +2,7 @@
 /* ==================== CAN RECEIVER ==================== */
 class CanReceiver {
   unsigned long lastFrame = 0;
+  unsigned long lastChassisFrame = 0;
   uint8_t lastCounter = 0;
   unsigned long lastCounterChange = 0;
 
@@ -13,6 +14,16 @@ public:
   uint8_t rgbMode = 0;
   uint16_t buttons = 0xFFFF;
   bool dataValid = false;
+
+  // Fahrwerk-Knoten (ESP32-C3) @ 0x123
+  uint8_t vRefKmh = 0;
+  uint8_t vDriveKmh = 0;
+  bool asrActive = false;
+  bool asrOff = false;
+  bool driftMode = false;
+  uint8_t rawSpeedVL = 0;
+  uint8_t rawSpeedVR = 0;
+  bool chassisDataValid = false;
 
   void begin() {
     twai_general_config_t g_config = {
@@ -42,7 +53,23 @@ public:
 
     twai_message_t message;
     while (twai_receive(&message, 0) == ESP_OK) {
-      if (message.data_length_code >= 8) {
+      if (message.identifier == CAN_ID_CHASSIS && message.data_length_code >= 6) {
+        vRefKmh = message.data[0];
+        vDriveKmh = message.data[1];
+        asrActive = message.data[2] != 0;
+        asrOff = (message.data[3] & 0x01) != 0;
+        driftMode = (message.data[3] & 0x02) != 0;
+        // Kompatibilität: C3 sendet Drift aktuell als Byte3=1 ohne Bitmaske
+        if (message.data[3] == 1 && (message.data[3] & 0x02) == 0) {
+          driftMode = true;
+          asrOff = false;
+        }
+        rawSpeedVL = message.data[4];
+        rawSpeedVR = message.data[5];
+        chassisDataValid = true;
+        lastChassisFrame = millis();
+        currentSpeed = (float)vRefKmh;
+      } else if (message.data_length_code >= 8) {
         exhaustAngle = message.data[0];
         dashPage = message.data[1];
         driveMode = message.data[2];
@@ -58,13 +85,15 @@ public:
         lastFrame = millis();
       }
     }
+
     if (millis() - lastFrame > CAN_TIMEOUT_MS) dataValid = false;
     if (millis() - lastCounterChange > 500) dataValid = false;
+    if (millis() - lastChassisFrame > CAN_TIMEOUT_MS) chassisDataValid = false;
   }
 
   bool isBlinkRight()   { return !(buttons & (1 << 0)); }
   bool isShiftDown()    { return !(buttons & (1 << 1)); }
-  bool isDRS()          { return !(buttons & (1 << 2)); }  // !!!
+  bool isDRS()          { return !(buttons & (1 << 2)); }
   bool isReverse()      { return !(buttons & (1 << 3)); }
   bool isBlinkLeft()    { return !(buttons & (1 << 4)); }
   bool isShiftUp()      { return !(buttons & (1 << 5)); }

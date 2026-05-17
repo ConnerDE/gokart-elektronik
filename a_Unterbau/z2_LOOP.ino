@@ -52,7 +52,13 @@ void loop() {
     launchActive = true;
   }
 
-  gasPedal.update(can.driveMode, launchActive, safety.currentRPM, safety.neutralActive);
+  if (can.chassisDataValid) {
+    virtualGear.update(safety.currentRPM, can.vDriveKmh);
+  }
+
+  gasPedal.update(can.driveMode, launchActive, safety.currentRPM, safety.neutralActive,
+                  can.chassisDataValid && can.asrActive && !can.asrOff,
+                  can.driftMode, can.vRefKmh, steering.getSteerPercent());
 
   // USB Toggle (Debounced)
   static bool lastUsbTaster = true;
@@ -86,7 +92,7 @@ void loop() {
     blinkerRightState = false;
     warnBlinkState = false;
     lights.update(can, safety, false);
-    updateDisplay(gearbox.getGear(), safety, can);
+    updateDisplay(gearbox.getGear(), safety, can, virtualGear.getGear(), can.chassisDataValid);
     return;
   }
 
@@ -114,5 +120,5 @@ void loop() {
 
   lights.update(can, safety, launchActive);
   sendTelemetry(safety, can, gasPedal, gearbox.getGear(), launchActive);
-  updateDisplay(gearbox.getGear(), safety, can);
+  updateDisplay(gearbox.getGear(), safety, can, virtualGear.getGear(), can.chassisDataValid);
 }

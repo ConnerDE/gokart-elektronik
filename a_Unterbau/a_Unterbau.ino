@@ -42,6 +42,14 @@ enum StatusLEDMode { LED_NORMAL, LED_EMERGENCY, LED_CAN_LOSS, LED_CALIBRATION };
 #define OIL_TEMP_CRITICAL     110.0
 #define BATTERY_SAMPLES       10
 #define CAN_TIMEOUT_MS        2000
+#define CAN_ID_CHASSIS        0x123
+#define PIN_STEER_ADC         3
+#define WHEEL_RADIUS_M        0.13f
+#define GEAR_HARDWARE_C       8.021f
+#define GEAR_RATIO_TOLERANCE  0.5f
+#define GEAR_MIN_SPEED_KMH    2.0f
+#define ROLLOVER_SPEED_KMH    40.0f
+#define ROLLOVER_STEER_PCT    30
 #define IGNITION_THRESHOLD    9.0
 #define GAS_MAX_STEPS_RAW     100 // Interner Zähler-Maximalwert (vor Kalibrierung)
 #define SERVICE_HOURS_LIMIT   10.0
@@ -183,6 +191,8 @@ class SafetyModule;
 class GasPedal;
 class Gearbox;
 class LightsManager;
+class VirtualGearDetector;
+class SteeringInput;
 
 // DRS Forward-Declarations (definiert in p_DRS.ino / q_DRS-Config.ino)
 enum DRSState { DRS_Disabled, DRS_Armed, DRS_Active };
@@ -205,6 +215,8 @@ extern SafetyModule safety;
 extern Gearbox gearbox;
 extern GasPedal gasPedal;
 extern LightsManager lights;
+extern VirtualGearDetector virtualGear;
+extern SteeringInput steering;
 
 // EXHAUST SERVO
 void initExhaustServo() {

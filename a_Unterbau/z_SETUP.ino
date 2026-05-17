@@ -64,6 +64,7 @@ void setup() {
 
   rpm.begin();
   can.begin();
+  steering.begin();
   safety.begin();
   gearbox.begin();
 

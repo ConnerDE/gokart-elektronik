@@ -17,3 +17,5 @@ SafetyModule safety;
 Gearbox gearbox;
 GasPedal gasPedal;
 LightsManager lights;
+VirtualGearDetector virtualGear;
+SteeringInput steering;
