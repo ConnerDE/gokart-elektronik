@@ -34,6 +34,7 @@
 #define MCP2_LED              9        // B1: Status LED
 #define MCP2_START_BTN        10       // B2: Start/Stop Taster
 #define MCP2_ENDSTOP_R        11       // B3: Endschalter Getriebe
+#define MCP2_HYD_PUMP_THERM   12       // B4: Thermoschalter Hydraulikpumpe
 #define MCP2_HUPE             14       // B6: Hupe
 #define MCP2_ZUENDUNG         15       // B7: Zündunterbrechung
 

@@ -58,8 +58,7 @@ enum StatusLEDMode { LED_NORMAL, LED_EMERGENCY, LED_CAN_LOSS, LED_CALIBRATION };
 #define STARTER_RPM_CUTOFF    300
 #define SERVICE_HOURS_LIMIT   10.0
 #define CHAIN_SHIFTS_LIMIT    50
-#define WDT_TIMEOUT           10
-#define DRIVE_MODE_NORMAL     0
+#define WDT_TIMEOUT           30   // 30 Sekunden - Setup mit vielen Sensoren braucht Zeit#define DRIVE_MODE_NORMAL     0
 #define DRIVE_MODE_SPORT      1
 #define DRIVE_MODE_OFFROAD    2
 #define DRIVE_MODE_RACE       3
@@ -146,8 +145,22 @@ enum StatusLEDMode { LED_NORMAL, LED_EMERGENCY, LED_CAN_LOSS, LED_CALIBRATION };
 #define MCP2_LED              9
 #define MCP2_START_BTN        10
 #define MCP2_ENDSTOP_R        11
+#define MCP2_HYD_PUMP_THERM   12
 #define MCP2_HUPE             14
 #define MCP2_ZUENDUNG         15
+
+/* ==================== ADS1115 ADC CHANNELS ==================== */
+#define ADS1115_CHANNEL_GAS    0       // Eingang 0: Gaspedal Poti (0-10k)
+#define ADS1115_CHANNEL_STEER  2       // Eingang 2: Lenkwinkel Sensor
+#define ADS1115_CHANNEL_CURRENT 3      // Eingang 3: Stromsensor (ACS758 100A)
+
+/* ==================== STROMSENSOR KONFIGURATION (ACS758 100A) ==================== */
+#define CURRENT_SENSOR_SENSITIVITY_MV_PER_A  26.5f    // ACS758-100U-PFF: 26.5 mV/A
+#define CURRENT_SENSOR_ZERO_OFFSET_V         2.5f     // Offset bei 0A (VCC/2 = 5V/2)
+#define CURRENT_SENSOR_NOISE_FLOOR_A         0.2f     // Mindest-Stromfluss für Messung
+#define CURRENT_SENSOR_MAX_A                 100.0f   // Max 100A
+#define CURRENT_SENSOR_CRITICAL_A            95.0f    // Warnung ab 95A
+
 
 /* ==================== EEPROM KEYS ==================== */
 #define PREF_NAMESPACE    "esp2"
@@ -165,6 +178,7 @@ enum StatusLEDMode { LED_NORMAL, LED_EMERGENCY, LED_CAN_LOSS, LED_CALIBRATION };
 #define PREF_STEER_MIN    "str_min"
 #define PREF_STEER_CENTER "str_ctr"
 #define PREF_STEER_MAX    "str_max"
+#define PREF_CURR_ZERO    "cur_zero"
 
 /* ==================== GLOBAL OBJECTS ==================== */
 Adafruit_MCP23X17 mcp1, mcp2;
@@ -176,6 +190,10 @@ BLECharacteristic* pCharacteristic = nullptr;
 BLECharacteristic* pCharInput = nullptr;
 bool deviceConnected = false;
 bool usbState = false;
+bool obdMode = false;
+bool bleTestMode = false;
+bool forceBleTelemetry = false;
+uint8_t bleTestStep = 0;
 
 uint32_t totalShifts = 0;
 uint32_t chainShifts = 0;
@@ -218,6 +236,11 @@ class EGTMax31855;
 // DRS Forward-Declarations (definiert in p_DRS.ino / q_DRS-Config.ino)
 enum DRSState { DRS_Disabled, DRS_Armed, DRS_Active };
 DRSState getDRSState();
+bool isDRSActive();
+void setDRSShowMode(bool val);
+bool drsAllowed(float speed, int throttle, int rpm, bool braking, bool systemOK, float oilTemp, float voltage);
+void runBleTestMode();
+void stopBleTestModeOutputs();
 extern bool drsShowMode;
 
 // Objekt-Forward-Declarations (definiert in za_global.ino)

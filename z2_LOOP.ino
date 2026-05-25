@@ -15,6 +15,12 @@ void loop() {
     return;
   }
 
+  if (bleTestMode) {
+    runBleTestMode();
+    sendTelemetry(safety, can, gasPedal, gearbox.getGear(), false);
+    return;
+  }
+
   // Blinker Logic (Comfort Blinker)
   bool bL = can.isBlinkLeft();
   bool bR = can.isBlinkRight();

@@ -20,6 +20,7 @@ public:
   bool ignitionOn = false;
   bool systemActive = false;
   bool starterActive = false;
+  bool hydPumpOverTemp = false;
   uint16_t currentRPM = 0;
   StatusLEDMode ledMode = LED_NORMAL;
 
@@ -58,8 +59,6 @@ public:
       mcp1.pinMode(MCP1_OIL, INPUT_PULLUP);
       mcp1.pinMode(MCP1_BRAKE, INPUT_PULLUP);
       mcp1.pinMode(MCP1_TILT, INPUT_PULLUP);
-      mcp1.pinMode(MCP1_PEDAL_ENC_A, INPUT_PULLUP);
-      mcp1.pinMode(MCP1_PEDAL_ENC_B, INPUT_PULLUP);
       mcp1.pinMode(MCP1_USB_TASTER, INPUT_PULLUP);
     } else {
       Serial.println("Safety inputs disabled: MCP1 not available");
@@ -67,7 +66,7 @@ public:
 
     if (i2cStatus & (1 << 1)) {
       for (uint8_t i = 0; i < 16; i++) {
-        if (i == MCP2_START_BTN || i == MCP2_ENDSTOP_R) {
+        if (i == MCP2_START_BTN || i == MCP2_ENDSTOP_R || i == MCP2_HYD_PUMP_THERM) {
           mcp2.pinMode(i, INPUT_PULLUP);
         } else {
           mcp2.pinMode(i, OUTPUT);
@@ -145,6 +144,8 @@ public:
       brakePressed = false;
       tiltDetected = false;
     }
+
+    hydPumpOverTemp = (i2cStatus & (1 << 1)) ? !mcp2.digitalRead(MCP2_HYD_PUMP_THERM) : false;
 
     bool nowEmergency = !oilPresent || tiltDetected || (oilTemp > OIL_TEMP_CRITICAL && oilTemp > 0);
 

@@ -71,6 +71,7 @@
 #define MCP2_LED              9        // Status LED (Ausgang)
 #define MCP2_START_BTN        10       // Start Stop Taster (Eingang)
 #define MCP2_ENDSTOP_R        11       // Endschalter Getriebe (Eingang)
+#define MCP2_HYD_PUMP_THERM   12       // B4: Thermoschalter Hydraulikpumpe (Eingang, aktiv LOW)
 #define MCP2_HUPE             14       // Hupe (Transistor NPN)
 #define MCP2_ZUENDUNG         15       // Zündunterbrechung (Transistor NPN)
 
@@ -83,8 +84,7 @@
 /* ==================== ADS1115 ADC CHANNELS ==================== */
 #define ADS1115_CHANNEL_GAS    0       // Eingang 0: Gaspedal Poti (0-10k)
 #define ADS1115_CHANNEL_STEER  2       // Eingang 2: Lenkwinkel Sensor
-#define ADS1115_CHANNEL_CURRENT 3      // Eingang 3: Stromsensor (0-32V/5A)
-
+#define ADS1115_CHANNEL_CURRENT 3      // Eingang 3: Stromsensor (ACS758 100A, 26.5mV/A)
 /* ==================== DRIVE MODES ==================== */
 #define DRIVE_MODE_NORMAL      0
 #define DRIVE_MODE_SPORT       1

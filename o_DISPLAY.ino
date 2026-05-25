@@ -63,7 +63,10 @@ void updateDisplay(int8_t physicalGear, SafetyModule& safety, CanReceiver& can,
       case DRIVE_MODE_OFFROAD: display.print("OFFR"); break;
       case DRIVE_MODE_RACE: display.print("RACE"); break;
     }
-    if (can.chassisDataValid && can.slipLampActive()) {
+    if (safety.hydPumpOverTemp) {
+      display.setCursor(60, 45);
+      display.print("HYD");
+    } else if (can.chassisDataValid && can.slipLampActive()) {
       display.setCursor(60, 45);
       display.print("SLIP");
     }
