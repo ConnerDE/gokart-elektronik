@@ -41,6 +41,7 @@ a_Unterbau/
 ├── p_DRS.ino               # Zustandsmaschine, Getter
 └── q_DRS_Config.ino        # Parameter, Bedingungslogik, Show-Mode
 ```
+- Muss noch geupdated werden.
 
 ## BLE Commands
 
